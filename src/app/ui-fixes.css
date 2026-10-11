@@ -1,0 +1,27 @@
+/* Targeted layout corrections kept separate from the compact base stylesheet. */
+.catalog-trigger {
+  align-items: center;
+  display: inline-flex;
+  height: 48px;
+  justify-content: center;
+  width: 170px;
+}
+
+.catalog-trigger span {
+  display: inline-block;
+  text-align: center;
+  width: 18px;
+}
+
+/* The overlay begins where the hero begins, with one consistent rounded frame. */
+.catalog-mega {
+  border-radius: 14px;
+  top: 116px;
+}
+
+@media (max-width: 820px) {
+  .catalog-trigger {
+    height: 40px;
+    width: 40px;
+  }
+}
