@@ -12,19 +12,26 @@ const subcategoryNames: Record<string, string> = {
   'wireless-headphones': 'Бездротові навушники', 'over-ear-headphones': 'Повнорозмірні навушники', 'portable-speakers': 'Портативна акустика',
   'wall-chargers': 'Мережеві зарядні пристрої', 'usb-cables': 'Кабелі USB та USB-C', 'wireless-chargers': 'Бездротові зарядні пристрої', 'car-chargers': 'Автомобільні зарядки',
 };
+const parentCategoryBySubcategory: Record<string, string> = {
+  powerbanks: 'energy', 'charging-stations': 'energy', 'solar-chargers': 'energy', ups: 'energy',
+  'wireless-headphones': 'audio', 'over-ear-headphones': 'audio', 'portable-speakers': 'audio',
+  'wall-chargers': 'charging', 'usb-cables': 'charging', 'wireless-chargers': 'charging', 'car-chargers': 'charging',
+};
 
 export default async function Catalog({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const category = typeof params.category === 'string' ? params.category : '';
   const subcategory = typeof params.subcategory === 'string' ? params.subcategory : '';
+  const activeCategory = subcategory ? parentCategoryBySubcategory[subcategory] || category : category;
   const q = typeof params.q === 'string' ? params.q : '';
   const selectedBrands = Array.isArray(params.brand) ? params.brand : params.brand ? [params.brand] : [];
   const rawPage = typeof params.page === 'string' ? params.page : undefined;
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (key === 'page' || !value) continue;
+    if (key === 'page' || key === 'category' || !value) continue;
     if (Array.isArray(value)) value.forEach(item => query.append(key, item)); else query.set(key, value);
   }
+  if (activeCategory) query.set('category', activeCategory);
   let products: Product[] = [], categories: Category[] = [];
   try { [products, categories] = await Promise.all([getProducts(`?${query}`), getCategories()]); } catch {}
   const pages = Math.max(1, Math.ceil(products.length / PAGE_SIZE));
@@ -35,6 +42,6 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
   products.forEach(product => Object.entries(product.specifications || {}).forEach(([name, value]) => { (filters[name] ||= []).push(value); }));
   Object.values(filters).forEach(values => values.splice(0, values.length, ...new Set(values)));
   const href = (next: number) => { const nextParams = new URLSearchParams(query); nextParams.set('page', String(next)); return `/catalog?${nextParams}`; };
-  const title = subcategory ? subcategoryNames[subcategory] || 'Підкатегорія' : category ? categories.find(item => item.slug === category)?.name || 'Каталог' : 'Усі товари';
-  return <main className="catalog-page"><div className="shell"><div className="catalog-title"><div><p className="eyebrow">DSGROUP / КАТАЛОГ</p><h1>{title}</h1></div><span>Знайдено <b>{products.length}</b> товарів</span></div><div className="catalog-layout"><aside className="filter-sidebar"><form><input name="q" defaultValue={q} placeholder="Пошук"/><select name="category" defaultValue={category}><option value="">Усі категорії</option>{categories.map(item => <option value={item.slug} key={item.slug}>{item.name}</option>)}</select>{subcategory && <input type="hidden" name="subcategory" value={subcategory}/>}<BrandFilter brands={brands} selected={selectedBrands}/>{Object.entries(filters).map(([name, values]) => <details open key={name}><summary>{name}</summary>{values.map(value => <label key={value}><input type="radio" name={`attr_${slugify(name)}`} value={value} defaultChecked={params[`attr_${slugify(name)}`] === value}/> {value}</label>)}</details>)}<button>Застосувати</button><Link href="/catalog">Очистити фільтри</Link></form></aside><section><form className="catalog-mobile-search"><input name="q" defaultValue={q} placeholder="Пошук за назвою або брендом"/><button>Знайти</button></form>{visible.length ? <><div className="catalog-grid">{visible.map(product => <ProductCard key={product.slug} product={product}/>)}</div>{pages > 1 && <nav aria-label="Пагінація" className="pagination">{page > 1 && <Link href={href(page - 1)}>← Назад</Link>}{Array.from({ length: pages }, (_, index) => index + 1).map(number => <Link key={number} className={number === page ? 'active' : ''} href={href(number)}>{number}</Link>)}{page < pages && <Link href={href(page + 1)}>Далі →</Link>}</nav>}</> : <div className="empty-catalog"><h2>Товарів не знайдено</h2><p>Спробуйте змінити фільтри.</p><Link href="/catalog">Скинути фільтри</Link></div>}</section></div></div></main>;
+  const title = subcategory ? subcategoryNames[subcategory] || 'Підкатегорія' : activeCategory ? categories.find(item => item.slug === activeCategory)?.name || 'Каталог' : 'Усі товари';
+  return <main className="catalog-page"><div className="shell"><div className="catalog-title"><div><p className="eyebrow">DSGROUP / КАТАЛОГ</p><h1>{title}</h1></div><span>Знайдено <b>{products.length}</b> товарів</span></div><div className="catalog-layout"><aside className="filter-sidebar"><form><input name="q" defaultValue={q} placeholder="Пошук"/><select name="category" defaultValue={activeCategory}><option value="">Усі категорії</option>{categories.map(item => <option value={item.slug} key={item.slug}>{item.name}</option>)}</select>{subcategory && <input type="hidden" name="subcategory" value={subcategory}/>}<BrandFilter brands={brands} selected={selectedBrands}/>{Object.entries(filters).map(([name, values]) => <details open key={name}><summary>{name}</summary>{values.map(value => <label key={value}><input type="radio" name={`attr_${slugify(name)}`} value={value} defaultChecked={params[`attr_${slugify(name)}`] === value}/> {value}</label>)}</details>)}<button>Застосувати</button><Link href="/catalog">Очистити фільтри</Link></form></aside><section><form className="catalog-mobile-search"><input name="q" defaultValue={q} placeholder="Пошук за назвою або брендом"/><button>Знайти</button></form>{visible.length ? <><div className="catalog-grid">{visible.map(product => <ProductCard key={product.slug} product={product}/>)}</div>{pages > 1 && <nav aria-label="Пагінація" className="pagination">{page > 1 && <Link href={href(page - 1)}>← Назад</Link>}{Array.from({ length: pages }, (_, index) => index + 1).map(number => <Link key={number} className={number === page ? 'active' : ''} href={href(number)}>{number}</Link>)}{page < pages && <Link href={href(page + 1)}>Далі →</Link>}</nav>}</> : <div className="empty-catalog"><h2>Товарів не знайдено</h2><p>Спробуйте змінити фільтри.</p><Link href="/catalog">Скинути фільтри</Link></div>}</section></div></div></main>;
 }
