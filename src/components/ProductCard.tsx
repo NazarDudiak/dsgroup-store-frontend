@@ -1,0 +1,5 @@
+import Link from 'next/link';
+import { assetUrl, Product } from '@/lib/api';
+import { AddToCart } from './AddToCart';
+import { ProductMedia } from './ProductMedia';
+export function ProductCard({ product }: { product: Product }) { const discount = product.old_price ? Math.round((1 - Number(product.price) / Number(product.old_price)) * 100) : 0; return <article className="product-card"><div className="product-visual">{discount > 0 && <span className="discount">−{discount}%</span>}<ProductMedia images={product.images} fallback={product.image} alt={product.name} href={`/product/${product.slug}`} compact/></div><div className="product-info"><p className="brand-label">{product.name.split(' ')[0]}</p><h2><Link href={`/product/${product.slug}`}>{product.name}</Link></h2><p className="stock">{product.stock ? '● Є в наявності' : 'Немає в наявності'}</p><div className="card-bottom"><div><strong>{Number(product.price).toLocaleString('uk-UA')} ₴</strong>{product.old_price && <del>{Number(product.old_price).toLocaleString('uk-UA')} ₴</del>}</div><AddToCart product={product} compact/></div></div></article>; }

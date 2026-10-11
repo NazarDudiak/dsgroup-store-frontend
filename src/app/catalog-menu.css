@@ -1,0 +1,22 @@
+.subcategories a {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 7px;
+  color: #0f1924;
+  font: 700 14px Manrope, Arial, sans-serif;
+}
+
+.subcategories a b {
+  margin-left: auto;
+  color: #7099c2;
+  font-size: 19px;
+}
+
+.subcategories a.active,
+.subcategories a:hover {
+  background: #edf2f7;
+  color: #3d668f;
+}
